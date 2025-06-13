@@ -1,6 +1,14 @@
 # app/routes/user_routes.py
 from flask import Blueprint, request, jsonify
-from app.models.user_model import get_all_users, get_user_by_id, insert_user, delete_user_by_id
+from app.models.user_model import (
+    get_all_users,
+    get_user_by_id,
+    insert_user,
+    delete_user_by_id,
+    get_user_by_username
+
+)
+import bcrypt 
 
 user_bp = Blueprint('user_bp', __name__, url_prefix='/users')
 
@@ -68,6 +76,8 @@ def route_create_user():
         description: Usuario creado
     """
     data = request.json
+    hashed = bcrypt.hashpw(data['password'].encode(), bcrypt.gensalt()).decode()
+    data['password'] = hashed
     insert_user(data)
     return jsonify({'message': 'User created'}), 201
 
@@ -87,3 +97,39 @@ def route_delete_user(user_id):
     """
     delete_user_by_id(user_id)
     return jsonify({'message': 'User deleted'})
+
+@user_bp.route('/login', methods=['POST'])
+def route_user_login():
+    """
+    Iniciar sesión de usuario (contraseña en texto plano, backend valida con bcrypt)
+    ---
+    consumes:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - username
+            - password
+          properties:
+            username:
+              type: string
+            password:
+              type: string
+    responses:
+      200:
+        description: Inicio de sesión exitoso
+      401:
+        description: Credenciales incorrectas
+    """
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    user = get_user_by_username(username)
+    if user and bcrypt.checkpw(password.encode(), user[2].encode()):
+        return jsonify({'message': 'Login success', 'user_id': user[0]})
+    return jsonify({'error': 'Invalid credentials'}), 401

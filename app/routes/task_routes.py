@@ -1,6 +1,6 @@
 # app/routes/task_routes.py
 from flask import Blueprint, request, jsonify
-from app.models.task_model import get_all_tasks, get_task_by_id, insert_task, delete_task_by_id
+from app.models.task_model import get_all_tasks, get_task_by_id, insert_task, delete_task_by_id, update_task_status
 
 task_bp = Blueprint('task_bp', __name__, url_prefix='/tasks')
 
@@ -92,3 +92,38 @@ def route_delete_task(task_id):
     """
     delete_task_by_id(task_id)
     return jsonify({'message': 'Task deleted'})
+
+@task_bp.route('/<int:task_id>/status', methods=['PATCH'])
+def update_task_status_route(task_id):
+    """
+    Actualiza el estado is_completed de una tarea
+    ---
+    consumes:
+      - application/json
+    parameters:
+      - name: task_id
+        in: path
+        type: integer
+        required: true
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - is_completed
+          properties:
+            is_completed:
+              type: boolean
+    responses:
+      200:
+        description: Tarea actualizada
+      404:
+        description: Tarea no encontrada
+    """
+    data = request.json
+    updated = update_task_status(task_id, data.get('is_completed'))
+    if updated:
+        return jsonify({'message': 'Task status updated'})
+    else:
+        return jsonify({'error': 'Task not found'}), 404

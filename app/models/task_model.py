@@ -30,3 +30,11 @@ def delete_task_by_id(task_id):
     cursor.execute("DELETE FROM tasks WHERE id = ?", task_id)
     conn.commit()
     return True
+def update_task_status(task_id, is_completed):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE tasks SET is_completed = ? WHERE id = ?", is_completed, task_id)
+    if cursor.rowcount == 0:
+        return False
+    conn.commit()
+    return True
